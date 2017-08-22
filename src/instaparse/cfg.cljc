@@ -9,7 +9,9 @@
             [instaparse.util :refer [throw-illegal-argument-exception
                                      throw-runtime-exception]]
             [clojure.string :as str]
-            #?(:cljs [cljs.reader :as reader])))
+            ;;LUMO
+            [cljs.tools.reader :as reader]
+            [cljs.tools.reader.reader-types :as readers]))
 
 (def ^:dynamic *case-insensitive-literals*
   "When true all string literal terminals in built grammar will be treated as case insensitive"
@@ -25,8 +27,9 @@
 (def single-quoted-regexp (regex-doc #"#'[^'\\]*(?:\\.[^'\\]*)*'" "Single-quoted regexp"))
 (def double-quoted-string (regex-doc #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"" "Double-quoted string"))
 (def double-quoted-regexp (regex-doc #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"" "Double-quoted regexp"))
-(def inside-comment #?(:clj #"(?s)(?:(?!(?:\(\*|\*\))).)*(?x) #Comment text"
-                       :cljs #"(?:(?!(?:\(\*|\*\)))[\s\S])*"))
+;; (def inside-comment #?(:clj #"(?s)(?:(?!(?:\(\*|\*\))).)*(?x) #Comment text"
+;;                        :cljs #"(?:(?!(?:\(\*|\*\)))[\s\S])*"))
+(def inside-comment #"(?:(?!(?:\(\*|\*\)))[\s\S])*")
 (def ws (regex-doc "[,\\s]*" "optional whitespace"))
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
@@ -178,24 +181,9 @@
          reader
          (fn [r s] (reader r s {} (java.util.LinkedList.)))))))
 
-#?(:clj
-   (let [string-reader (wrap-reader
-                         (clojure.lang.LispReader$StringReader.))]
-     (defn safe-read-string
-       "Expects a double-quote at the end of the string"
-       [s]
-       (with-in-str s (string-reader *in* nil))))
-
-   :cljs
-   (defn safe-read-string [s]
-     (reader/read-string* (reader/push-back-reader s) nil)))
-
-; I think re-pattern is sufficient, but here's how to do it without.
-;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]
-;  (defn safe-read-regexp
-;    "Expects a double-quote at the end of the string"
-;    [s]
-;    (with-in-str s (regexp-reader *in* nil))))
+;; LUMO
+(defn safe-read-string [s]
+  (reader/read-string* (readers/string-push-back-reader s) nil nil nil))
 
 (defn process-string
   "Converts single quoted string to double-quoted"

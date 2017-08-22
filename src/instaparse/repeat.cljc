@@ -1,13 +1,12 @@
 (ns instaparse.repeat
-  (:require [instaparse.gll :as gll
-             #?@(:clj [:refer [profile]])]
+  (:require [instaparse.gll :as gll]
             [instaparse.combinators-source :as c]
             [instaparse.auto-flatten-seq :as afs]
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
             [instaparse.failure :as fail])
-  #?(:cljs
-     (:require-macros [instaparse.gll :refer [profile]])))
+  ;;LUMO
+  (:require-macros [instaparse.gll-macros :refer [profile]]))
 
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))
@@ -170,14 +169,14 @@
     
 (defn try-repeating-parse-strategy-with-header
   [grammar text start-production start-rule output-format]
-  (gll/profile (gll/clear!))
+  (profile (gll/clear!))
   (let [parsers (:parsers start-rule)
         repeating-parser (last parsers)]
     (if
-      (not (and (= (:tag start-rule) :cat)
-                (#{:star :plus} (:tag repeating-parser))
-                (not (:hide repeating-parser))
-                (not (:hide (:parser repeating-parser)))))
+        (not (and (= (:tag start-rule) :cat)
+                  (#{:star :plus} (:tag repeating-parser))
+                  (not (:hide repeating-parser))
+                  (not (:hide (:parser repeating-parser)))))
       failure-signal
       (let [header-parser (apply c/cat (butlast parsers))]
         (if (= (:red start-rule) red/raw-non-terminal-reduction)

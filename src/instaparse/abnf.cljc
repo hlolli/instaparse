@@ -11,15 +11,15 @@
               string-ci regexp nt look neg hide hide-tag unicode-char]]
             #?(:cljs [goog.string.format])
             [clojure.walk :as walk])
-  #?(:cljs (:require-macros [instaparse.abnf :refer [precompile-cljs-grammar]])))
+  (:require-macros [instaparse.abnf-macros :refer [precompile-cljs-grammar]]))
 
 (def ^:dynamic *case-insensitive*
   "This is normally set to false, in which case the non-terminals
-are treated as case-sensitive, which is NOT the norm
-for ABNF grammars. If you really want case-insensitivity,
-bind this to true, in which case all non-terminals
-will be converted to upper-case internally (which
-you'll have to keep in mind when transforming)."
+  are treated as case-sensitive, which is NOT the norm
+  for ABNF grammars. If you really want case-insensitivity,
+  bind this to true, in which case all non-terminals
+  will be converted to upper-case internally (which
+  you'll have to keep in mind when transforming)."
   false)
 
 (def abnf-core
@@ -107,29 +107,29 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
    (defmacro precompile-cljs-grammar
      []
      (let [combinators (red/apply-standard-reductions 
-                         :hiccup (cfg/ebnf (str abnf-grammar-common
-                                                abnf-grammar-cljs-only)))]
+                        :hiccup (cfg/ebnf (str abnf-grammar-common
+                                               abnf-grammar-cljs-only)))]
        (walk/postwalk
-         (fn [form]
-           (cond
-             ;; Lists cannot be evaluated verbatim
-             (seq? form)
-             (list* 'list form)
+        (fn [form]
+          (cond
+            ;; Lists cannot be evaluated verbatim
+            (seq? form)
+            (list* 'list form)
 
-             ;; Regexp terminals are handled differently in cljs
-             (= :regexp (:tag form))
-             `(merge (regexp ~(str (:regexp form)))
-                     ~(dissoc form :tag :regexp))
+            ;; Regexp terminals are handled differently in cljs
+            (= :regexp (:tag form))
+            `(merge (regexp ~(str (:regexp form)))
+                    ~(dissoc form :tag :regexp))
 
-             :else form))
-         combinators))))
+            :else form))
+        combinators))))
+
+(def abnf-parser (precompile-cljs-grammar))
 
 #?(:clj
    (def abnf-parser (red/apply-standard-reductions 
-                      :hiccup (cfg/ebnf (str abnf-grammar-common
-                                             abnf-grammar-clj-only))))
-   :cljs
-   (def abnf-parser (precompile-cljs-grammar)))
+                     :hiccup (cfg/ebnf (str abnf-grammar-common
+                                            abnf-grammar-clj-only)))))
 
 (defn get-char-combinator
   [& nums]

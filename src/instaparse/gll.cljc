@@ -5,33 +5,32 @@
    listeners and parse commands that are on the stack."
 
   (:require
-    ;; Incremental vector provides a more performant hashing strategy 
-    ;; for this use-case for vectors
-    ;; We use the auto flatten version
-    [instaparse.auto-flatten-seq :as afs]
+   ;; Incremental vector provides a more performant hashing strategy 
+   ;; for this use-case for vectors
+   ;; We use the auto flatten version
+   [instaparse.auto-flatten-seq :as afs]
 
-    ;; failure contains the augment-failure function, which is called to
-    ;; add enough information to the failure object for pretty printing 
-    [instaparse.failure :as fail]
+   ;; failure contains the augment-failure function, which is called to
+   ;; add enough information to the failure object for pretty printing 
+   [instaparse.failure :as fail]
 
-    ;; reduction contains code relating to reductions and flattening.
-    [instaparse.reduction :as red]
+   ;; reduction contains code relating to reductions and flattening.
+   [instaparse.reduction :as red]
 
-    ;; Two of the public combinators are needed.
-    [instaparse.combinators-source :refer [Epsilon nt]]
+   ;; Two of the public combinators are needed.
+   [instaparse.combinators-source :refer [Epsilon nt]]
 
-    ;; Need a way to convert parsers into strings for printing and error messages.
-    [instaparse.print :as print]
+   ;; Need a way to convert parsers into strings for printing and error messages.
+   [instaparse.print :as print]
 
-    ;; Unicode utilities for char-range
-    #?(:cljs
-       [goog.i18n.uChar :as u]))
-
-  #?(:cljs
-     (:use-macros
-       [instaparse.gll :only
-        [log profile dprintln dpprint success
-         attach-diagnostic-meta trace-or-false]])))
+   ;; Unicode utilities for char-range
+   #?(:cljs
+      [goog.i18n.uChar :as u]))
+  ;;LUMO
+  (:require-macros
+   [instaparse.gll-macros :refer
+    [log profile dprintln dpprint success
+     attach-diagnostic-meta trace-or-false]]))
 
 ;; As of Java 7, strings no longer have fast substring operation,
 ;; so we use Segments instead, which implement the CharSequence
@@ -402,16 +401,12 @@
   "Pushes a thunk onto the trampoline's negative-listener stack."
   [tramp creator negative-listener]
   #_(dprintln "push-negative-listener" (type negative-listener))
-  ; creator is a node-key, i.e., a [index parser] pair
+  ;; creator is a node-key, i.e., a [index parser] pair
   (swap! (:negative-listeners tramp) merge-negative-listeners 
          {(creator 0) [(attach-diagnostic-meta negative-listener {:creator creator})]}))  
 
-;(defn success [tramp node-key result end]
-;  (push-result tramp node-key (make-success result end)))
-
-#?(:clj
-   (defmacro success [tramp node-key result end]
-     `(push-result ~tramp ~node-key (make-success ~result ~end))))
+;; (defn success [tramp node-key result end]
+;; (push-result tramp node-key (make-success result end)))
 
 (declare build-node-with-meta)
 (defn fail [tramp node-key index reason]
@@ -429,9 +424,9 @@
   (when (= index (:fail-index tramp))
     (success tramp node-key 
              (build-node-with-meta
-               (:node-builder tramp) :instaparse/failure
-               (sub-sequence (:text tramp) index)
-               index (count (:text tramp)))
+              (:node-builder tramp) :instaparse/failure
+              (sub-sequence (:text tramp) index)
+              index (count (:text tramp)))
              (count (:text tramp)))))
 
 ;; Stack helper functions
