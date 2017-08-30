@@ -202,9 +202,9 @@
            (or (nil? ws-parser)
                (contains? standard-whitespace-parsers ws-parser)
                (and
-                 (map? ws-parser)
-                 (contains? ws-parser :grammar)
-                 (contains? ws-parser :start-production))))]}
+                (map? ws-parser)
+                (contains? ws-parser :grammar)
+                (contains? ws-parser :start-production))))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
@@ -233,7 +233,7 @@
                    :cljs
                    (build-parser grammar-specification output-format))]
             (if start (map->Parser (assoc parser :start-production start))
-              (map->Parser parser)))
+                (map->Parser parser)))
 
           (map? grammar-specification)
           (let [parser
@@ -261,7 +261,7 @@
               (pr-str grammar-specification))))]
 
     (let [auto-whitespace (get options :auto-whitespace)
-          ; auto-whitespace is keyword, parser, or nil
+                                        ; auto-whitespace is keyword, parser, or nil
           whitespace-parser (if (keyword? auto-whitespace)
                               (get standard-whitespace-parsers auto-whitespace)
                               auto-whitespace)]
@@ -271,9 +271,8 @@
                                   ws-grammar ws-start))
         built-parser))))
 
-#?(:clj
-   (defmacro defparser
-     "Takes a string specification of a context-free grammar,
+(defmacro defparser
+  "Takes a string specification of a context-free grammar,
   or a string URI for a text file containing such a specification,
   or a map/vector of parser combinators, and sets a variable to a parser for that grammar.
 
@@ -282,56 +281,57 @@
 
   Optional keyword arguments unique to `defparser`:
   - :instaparse.abnf/case-insensitive true"
-     [name grammar & {:as opts}]
-     ;; For each of the macro-time opts, ensure that they are the data
-     ;; types we expect, not more complex quoted expressions.
-     {:pre [(or (nil? (:input-format opts))
-                (keyword? (:input-format opts)))
-            (or (nil? (:output-format opts))
-                (keyword? (:output-format opts)))
-            (contains? #{true false nil} (:string-ci opts))
-            (contains? #{true false nil} (:no-slurp opts))]}
-     (if (string? grammar)
-       `(def ~name
-          (map->Parser
-           ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
-              (let [macro-time-opts (select-keys opts [:input-format
-                                                       :output-format
-                                                       :string-ci
-                                                       :no-slurp])
-                    runtime-opts (dissoc opts :start)
-                    macro-time-parser (apply parser grammar (apply concat macro-time-opts))
-                    pre-processed-grammar (:grammar macro-time-parser)
+  [name grammar & {:as opts}]
+  ;; For each of the macro-time opts, ensure that they are the data
+  ;; types we expect, not more complex quoted expressions.
+  {:pre [(or (nil? (:input-format opts))
+             (keyword? (:input-format opts)))
+         (or (nil? (:output-format opts))
+             (keyword? (:output-format opts)))
+         (contains? #{true false nil} (:string-ci opts))
+         (contains? #{true false nil} (:no-slurp opts))]}
+  (if (string? grammar)
+    `(def ~name
+       (map->Parser
+        ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
+           (let [macro-time-opts (select-keys opts [:input-format
+                                                    :output-format
+                                                    :string-ci
+                                                    :no-slurp])
+                 runtime-opts (dissoc opts :start)
+                 macro-time-parser (apply parser grammar (apply concat macro-time-opts))
+                 pre-processed-grammar (:grammar macro-time-parser)
 
-                    grammar-producing-code
-                    (->> pre-processed-grammar
-                         (walk/postwalk
-                           (fn [form]
-                             (cond
-                               ;; Lists cannot be evaluated verbatim
-                               (seq? form)
-                               (list* 'list form)
+                 grammar-producing-code
+                 (->> pre-processed-grammar
+                      (walk/postwalk
+                       (fn [form]
+                         (cond
+                           ;; Lists cannot be evaluated verbatim
+                           (seq? form)
+                           (list* 'list form)
 
-                               ;; Regexp terminals are handled differently in cljs
-                               (= :regexp (:tag form))
-                               `(merge (c/regexp ~(str (:regexp form)))
-                                       ~(dissoc form :tag :regexp))
+                           ;; LUMO
+                           ;; Regexp terminals are handled differently in cljs
+                           ;; (= :regexp (:tag form))
+                           ;; `(merge (c/regexp ~(str (:regexp form)))
+                           ;;         ~(dissoc form :tag :regexp))
 
-                               :else form))))
+                           :else form))))
 
-                    start-production
-                    (or (:start opts) (:start-production macro-time-parser))]
-                `(parser ~grammar-producing-code
-                         :start ~start-production
-                         ~@(apply concat runtime-opts))))))
-       `(def ~name (parser ~grammar ~@(apply concat opts))))))
-        
+                 start-production
+                 (or (:start opts) (:start-production macro-time-parser))]
+             `(parser ~grammar-producing-code
+                      :start ~start-production
+                      ~@(apply concat runtime-opts))))))
+    `(def ~name (parser ~grammar ~@(apply concat opts)))))
+
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
   (or
-    (instance? gll/failure-type result)
-    (instance? gll/failure-type (meta result))))
+   (instance? gll/failure-type result)
+   (instance? gll/failure-type (meta result))))
 
 (defn get-failure
   "Extracts failure object from failed parse result."
